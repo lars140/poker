@@ -1,0 +1,24 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^npm\\.cmd test$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^npm\\.cmd audit --omit=dev$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^npm\\.cmd run dev$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^npm\\.cmd audit --json$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^npm\\.cmd audit$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
