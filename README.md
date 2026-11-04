@@ -59,4 +59,17 @@ Tests cover scoring for 4 to 7 players, invalid and duplicate placements, single
 
 The GitHub Actions workflow in `.github/workflows/main.yml` builds the app with Next.js static export and deploys the generated `out/` directory. Repository sites automatically use the repository name as their base path; user and organization sites are published at the root. In the repository settings, enable GitHub Pages and select GitHub Actions as the source.
 
+### Without GitHub Actions (serve from the `docs` folder)
+
+GitHub Pages cannot build TypeScript; it only serves finished files. If Pages is set to "Deploy from a branch", build the site locally and commit it:
+
+```powershell
+npm run build:docs   # writes the finished site to ./docs (base path /poker; pass another name as an argument)
+git add docs
+git commit -m "Build site"
+git push
+```
+
+Then in Settings → Pages choose **Deploy from a branch**, branch `main`, folder `/docs`. Rebuild and commit `docs` after every change.
+
 The app uses hash-based routes (`/#/g/...`), so every page works on a static host without server rewrites.
