@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { EmptyState, formatDate, formatDateTime, PageHeader, PlayerName, Stat } from "@/components/ui";
 import { goingCount, type League } from "@/lib/domain";
 import { Link } from "@/lib/router";
 
 export function Dashboard({ league }: { league: League }) {
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
   const upcoming = league.groups
     .flatMap((g) => g.events.filter((e) => e.status === "scheduled" && new Date(e.startsAt).getTime() >= now).map((event) => ({ group: g, event })))
     .sort((a, b) => a.event.startsAt.localeCompare(b.event.startsAt))

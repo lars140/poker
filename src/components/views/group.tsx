@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { PointsChart } from "@/components/points-chart";
 import { Alert, EmptyState, Field, formatDate, formatDateTime, PageHeader, PlayerName, Stat, useAction } from "@/components/ui";
-import { addMember, deleteGroup, resultRows, setMemberArchived, updateGroup, type Group, type League } from "@/lib/domain";
+import { addMember, createGroup, deleteGroup, resultRows, setMemberArchived, updateGroup, type Group, type League } from "@/lib/domain";
 import { ordinal } from "@/lib/format";
 import { Link, navigate, usePath } from "@/lib/router";
 import { commit } from "@/lib/storage";
@@ -74,7 +74,7 @@ export function NewGroup({ league }: { league: League }) {
         e.preventDefault();
         const data = new FormData(e.currentTarget);
         run(() => {
-          const created = (void 0, require_(league, String(data.get("name") ?? ""), String(data.get("description") ?? "")));
+          const created = createGroup(league, { name: String(data.get("name") ?? ""), description: String(data.get("description") ?? "") });
           commit(created.league);
           navigate(`/g/${created.id}/members`);
         });
@@ -87,9 +87,6 @@ export function NewGroup({ league }: { league: League }) {
     </div>
   );
 }
-
-import { createGroup } from "@/lib/domain";
-const require_ = (league: League, name: string, description: string) => createGroup(league, { name, description });
 
 export function Leaderboard({ group }: { group: Group }) {
   const board = computeLeaderboard(resultRows(group));
