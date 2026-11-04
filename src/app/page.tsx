@@ -12,7 +12,6 @@ import {
   Medal,
   Plus,
   Settings2,
-  ShieldCheck,
   Trophy,
   UsersRound,
 } from "lucide-react";
@@ -58,7 +57,7 @@ export default function Home() {
         <a className="group-link" href="#groups"><span className="group-dot dot-green" />The River Club<span className="group-chevron">›</span></a>
         <a className="group-link" href="#groups"><span className="group-dot dot-amber" />Westside Cards<span className="group-chevron">›</span></a>
         <div className="sidebar-bottom">
-          <div className="setup-note"><span className="setup-icon"><ShieldCheck size={15} /></span><div><strong>Setup required</strong><small>Connect Supabase to enable accounts and save league data.</small></div></div>
+          <div className="setup-note"><span className="setup-icon"><Trophy size={15} /></span><div><strong>Preview mode</strong><small>Sample league data is not saved.</small></div></div>
           <button className="nav-item settings-link"><Settings2 size={17} />Settings</button>
           <div className="user-row"><span className="user-avatar">JL</span><div className="user-copy"><strong>Jordan Lee</strong><small>Personal account</small></div><ChevronDown size={15} className="user-chevron" /></div>
         </div>
