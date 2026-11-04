@@ -187,6 +187,7 @@ export function respondToEvent(league: League, groupId: string, eventId: string,
   const event = eventOf(group, eventId);
   const current = event.invitations[memberId];
   if (!current) throw new Error("This player has not been invited to the event.");
+  if (group.members.find((m) => m.id === memberId)?.archived) throw new Error("Archived players cannot respond to events.");
   if (event.status !== "scheduled") throw new Error("This event is no longer open for responses.");
   if (answer !== "declined" && event.registrationDeadline && now > new Date(event.registrationDeadline)) {
     throw new Error("The registration deadline has passed.");

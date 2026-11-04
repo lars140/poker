@@ -95,6 +95,7 @@ describe("events and attendance", () => {
     s.league = respondToEvent(s.league, s.groupId, s.eventId, s.ids[0], "going");
     s.league = setMemberArchived(s.league, s.groupId, s.ids[0], true);
     expect(goingCount(s.group().events[0])).toBe(0);
+    expect(() => respondToEvent(s.league, s.groupId, s.eventId, s.ids[0], "going")).toThrow(/Archived players/);
   });
 });
 

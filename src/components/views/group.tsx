@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { PointsChart } from "@/components/points-chart";
-import { Alert, EmptyState, Field, formatDate, formatDateTime, PageHeader, PlayerName, Stat, useAction } from "@/components/ui";
+import { Alert, EmptyState, Field, formatDate, formatDateTime, PageHeader, PlayerName, Stat, toLocalInput, useAction } from "@/components/ui";
 import { addMember, createGroup, deleteGroup, resultRows, setMemberArchived, updateGroup, type Group, type League } from "@/lib/domain";
 import { ordinal } from "@/lib/format";
 import { Link, navigate, usePath } from "@/lib/router";
@@ -197,7 +197,10 @@ export function History({ group }: { group: Group }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const list = [...group.tournaments]
-    .filter((t) => (!from || t.playedAt.slice(0, 10) >= from) && (!to || t.playedAt.slice(0, 10) <= to))
+    .filter((t) => {
+      const day = toLocalInput(t.playedAt).slice(0, 10); // the viewer's local calendar day
+      return (!from || day >= from) && (!to || day <= to);
+    })
     .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
 
   return (

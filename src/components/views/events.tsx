@@ -132,7 +132,7 @@ export function EventDetail({ league, group, eventId }: { league: League; group:
               {invited.map(({ id, response }) => (
                 <li key={id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                   <span className="flex items-center gap-3"><PlayerName group={group} memberId={id} /><StatusBadge status={response} /></span>
-                  {open && (
+                  {open && !group.members.find((m) => m.id === id)?.archived && (
                     <span className="flex gap-1.5">
                       {(["going", "maybe", "declined"] as const).map((answer) => (
                         <button key={answer} type="button" className={`btn btn-sm ${response === answer ? "btn-primary" : ""}`}
@@ -310,7 +310,7 @@ export function CorrectResults({ league, group, tournamentId }: { league: League
     <details className="card">
       <summary className="cursor-pointer text-sm font-semibold">Correct results</summary>
       <p className="my-3 text-sm text-muted">A correction replaces all placements and recalculates points. Rankings update automatically; nothing is counted twice.</p>
-      <PlacementsForm group={group} initialOrder={initial} submitLabel="Save correction" onSave={(placements) => {
+      <PlacementsForm key={t.correctionCount} group={group} initialOrder={initial} submitLabel="Save correction" onSave={(placements) => {
         commit(correctTournament(league, group.id, t.id, placements));
         navigate(`/g/${group.id}/history/${t.id}`);
       }} />
