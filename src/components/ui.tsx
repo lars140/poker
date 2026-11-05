@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import { memberOf, userName, type Group } from "@/lib/domain";
 import { Link } from "@/lib/router";
 import { useSession } from "@/lib/session";
@@ -83,11 +84,14 @@ export function StatusBadge({ status }: { status: string }) {
   return <span className={STATUS_STYLE[status] ?? "badge"}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>;
 }
 
-export function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+export function Stat({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-      <div className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
+    <div className="tile">
+      {Icon && <span className="tile-icon"><Icon size={34} aria-hidden /></span>}
+      <div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
+        <div className="text-3xl font-extrabold tabular-nums">{value}</div>
+      </div>
     </div>
   );
 }

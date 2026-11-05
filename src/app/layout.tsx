@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Felt | Private Poker League", template: "%s | Felt" },
+  title: { default: "PrimePoker | Private Poker League", template: "%s | PrimePoker" },
   description: "Run your in-person poker league: groups, game nights, results and leaderboards.",
 };
 

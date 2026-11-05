@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Backend, type ApiResponse, type Doc, type DocStore } from "./backend";
+import { Backend, ConflictError, type ApiResponse, type Doc, type DocStore } from "./backend";
 import type { League } from "../lib/domain";
 
 class MemoryStore implements DocStore {
@@ -155,5 +155,28 @@ describe("groups, accounts and admin rights over the API", () => {
     const results = await Promise.all(Array.from({ length: 10 }, (_, i) => t.act(anna.token, "createGroup", { name: `Group ${i}` })));
     expect(results.every((r) => r.status === 200)).toBe(true);
     expect(t.store.doc!.league.groups).toHaveLength(10);
+  });
+
+  it("runs a request again when the store reports a concurrent change", async () => {
+    const store = new MemoryStore();
+    let conflicts = 2;
+    const save = store.save.bind(store);
+    store.save = async (doc) => {
+      if (conflicts-- > 0) throw new ConflictError();
+      await save(doc);
+    };
+    const backend = new Backend(store, { iterations: 1000 });
+    const res = await backend.handle({ method: "POST", path: "/api/register", body: { username: "anna", password: "pokerface1" } });
+    expect(res.status).toBe(200);
+    expect(store.doc!.league.users).toHaveLength(1);
+    expect(store.doc!.sessions).toHaveLength(1);
+  });
+
+  it("gives up with a busy message when conflicts never stop", async () => {
+    const store = new MemoryStore();
+    store.save = async () => { throw new ConflictError(); };
+    const backend = new Backend(store, { iterations: 1000 });
+    const res = await backend.handle({ method: "POST", path: "/api/register", body: { username: "anna", password: "pokerface1" } });
+    expect(res.status).toBe(503);
   });
 });

@@ -1,15 +1,15 @@
-# Felt: Private Poker League
+# PrimePoker: Private Poker League
 
-Felt manages an in-person Texas Hold'em league: accounts, groups, game nights, attendance, tournament results, points and leaderboards. There is no virtual table, card simulation, chip management, betting, payments or real-money gambling.
+PrimePoker manages an in-person Texas Hold'em league: accounts, groups, game nights, attendance, tournament results, points and leaderboards. There is no virtual table, card simulation, chip management, betting, payments or real-money gambling.
 
 ## Architecture
 
-Everything runs on Cloudflare as **one Worker** (`worker/`):
+Everything runs on **Cloudflare Pages** with one **D1** database:
 
-- **Website:** a static Next.js export (`out/`) served by the Worker as static assets, using hash routes.
-- **API:** `/api/*` is handled by the same Worker, so the site and the API share one address (no CORS, no extra configuration).
-- **Data:** all accounts, groups, events and results live in **one JSON document** in a Durable Object, so they are available from every device. The Durable Object handles one request at a time, so simultaneous edits cannot overwrite each other.
-- **Shared rules:** `src/lib/domain.ts` is the single implementation of all business rules and permission checks. The browser only displays data; the Worker runs the rules for the authenticated user.
+- **Website:** a static Next.js export (`out/`) using hash routes.
+- **API:** `functions/api/[[path]].ts` is a Pages Function that answers `/api/*` on the same address as the site (no CORS, no extra configuration).
+- **Data:** all accounts, groups, events and results live as **one JSON document in one D1 row** (`src/server/d1-store.ts`), so they are available from every device. Every write checks the version it read, so simultaneous edits cannot overwrite each other; a conflicting request is simply run again. The table is created automatically on first use.
+- **Shared rules:** `src/lib/domain.ts` is the single implementation of all business rules and permission checks. The browser only displays data; the function runs the rules for the authenticated user.
 
 ## Features
 
@@ -32,50 +32,56 @@ Scoring (one central function, `src/lib/scoring.ts`; points are stored per resul
 
 ## Known limits
 
-- No email, so there is **no password reset or email verification**. A forgotten password cannot be recovered; the owner of the Cloudflare account would have to edit the stored document.
-- The whole league is one JSON value (Durable Object storage limit: 2 MB). That is plenty for many hundreds of game nights; very large leagues would need a database.
+- No email, so there is **no password reset or email verification**. A forgotten password cannot be recovered; the owner of the Cloudflare account would have to edit the stored document in D1.
+- The whole league is one JSON value (D1 row limit: 2 MB). That is plenty for many hundreds of game nights; very large leagues would need a database.
 - The session token is kept in the browser's `localStorage`.
 - No in-app notifications or invitation links: admins add people by username.
 
-## Deploy to Cloudflare
+## Deploy to Cloudflare Pages
 
 Requires Node.js 20.9+ and a free Cloudflare account.
 
 ```powershell
 npm ci
 npx wrangler login
+npx wrangler d1 create felt-db
+```
+
+The last command prints a `database_id`. Paste it into [wrangler.toml](wrangler.toml) (replacing `REPLACE_WITH_YOUR_DATABASE_ID`), then:
+
+```powershell
+npx wrangler pages project create felt-poker --production-branch=main   # once
 npm run deploy
 ```
 
-`npm run deploy` builds the website and uploads it together with the Worker. Wrangler prints the address (`https://felt-poker.<your-subdomain>.workers.dev`). Open it, create an account and start your first group. A custom domain can be added in the Cloudflare dashboard (Worker → Settings → Domains & Routes).
+`npm run deploy` builds the website and uploads it together with the function. Wrangler prints the address (`https://felt-poker.pages.dev`). Open it, create an account and start your first group. A custom domain can be added in the Cloudflare dashboard (Workers & Pages → felt-poker → Custom domains).
 
-If `npm ci` warns that scripts are blocked (`workerd`), run `npm approve-scripts` once so Wrangler can run locally.
+The `DB` binding comes from `wrangler.toml`, so it does not have to be set in the dashboard.
 
-### Automatic deploys from GitHub (optional)
+### Automatic deploys
 
-The workflow in `.github/workflows/main.yml` runs the tests and deploys on every push to `main`. Add two repository secrets (Settings → Secrets and variables → Actions):
+Either connect the repository in the Cloudflare dashboard (Workers & Pages → Create → Pages → Connect to Git) with build command `npm run build` and output directory `out`, or use the workflow in `.github/workflows/main.yml`, which runs the tests and deploys on every push to `main`. For the workflow add two repository secrets (Settings → Secrets and variables → Actions):
 
-- `CLOUDFLARE_API_TOKEN`: an API token created from the "Edit Cloudflare Workers" template.
+- `CLOUDFLARE_API_TOKEN`: an API token with the permission *Cloudflare Pages: Edit*.
 - `CLOUDFLARE_ACCOUNT_ID`: shown in the Cloudflare dashboard.
 
-Alternatively, connect the repository in the Cloudflare dashboard (Workers & Pages → Create → Import a repository) with build command `npm ci && npm run build` and deploy command `npx wrangler deploy -c worker/wrangler.toml`.
+Use only one of the two, otherwise every push deploys twice.
 
 ## Local development
 
 ```powershell
-npm run worker:dev   # backend on http://localhost:8787 with local storage
-npm run dev          # website on http://localhost:3000 (talks to the Worker above)
+npm run build && npm run pages:dev   # site + API on http://localhost:8788 with a local D1 database
 ```
 
-To try the production setup locally, run `npm run build`, then `npm run worker:dev`, and open http://localhost:8787.
+For live reload while editing the website, copy `.dev.vars.example` to `.dev.vars`, keep `npm run pages:dev` running and start `npm run dev` (http://localhost:3000, talks to the API on port 8788).
 
 ## Checks
 
 ```powershell
 npm test             # domain rules, permissions, scoring, validation, backend (login, sessions, lockout, admin rights)
 npm run lint
-npm run worker:check # type-check the Worker
+npm run functions:check # type-check the Pages Function
 npm run build
 ```
 
-The backend tests run the real request handler with an in-memory store. A manual smoke test against `wrangler dev` covered the website, assets, the 404 page, registration, duplicate usernames, wrong passwords and protected routes from a single address.
+The backend tests run the real request handler with an in-memory store. A manual smoke test against `wrangler pages dev` (local D1) covered the website, assets, the 404 page, registration, duplicate usernames, wrong passwords and protected routes from a single address.

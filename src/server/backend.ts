@@ -7,8 +7,8 @@ import {
 } from "../lib/domain";
 import { displayNameSchema, parseOrThrow, passwordSchema, usernameSchema } from "../lib/validation";
 
-// Framework-free backend. The Cloudflare Durable Object feeds it requests one at a time and
-// persists the single JSON document it works on. Everything security relevant happens here.
+// Framework-free backend. A Cloudflare Pages Function feeds it requests and a DocStore (D1) persists the
+// single JSON document it works on. Everything security relevant happens here.
 
 export type Doc = {
   league: League;
@@ -19,8 +19,16 @@ export type Doc = {
   failures: Record<string, { count: number; lockedUntil: number }>;
 };
 
+/** Thrown by a store when the document was changed by someone else between load and save. */
+export class ConflictError extends Error {
+  constructor() {
+    super("The document was changed concurrently.");
+  }
+}
+
 export interface DocStore {
   load(): Promise<Doc | undefined>;
+  /** Must throw ConflictError if the document changed since `load`; the request is then run again. */
   save(doc: Doc): Promise<void>;
 }
 
@@ -29,6 +37,7 @@ export type ApiResponse = { status: number; body: unknown };
 
 const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_SESSIONS_PER_USER = 10;
+const MAX_ATTEMPTS = 6;
 const MAX_FAILURES = 8;
 const LOCKOUT_MS = 10 * 60 * 1000;
 
@@ -106,11 +115,25 @@ export class Backend {
     this.iterations = options.iterations ?? 100_000;
   }
 
-  /** Requests are processed one at a time so concurrent writes can never overwrite each other. */
+  /**
+   * Requests of one instance run one at a time. Across instances (several Workers at once) the store
+   * detects concurrent changes and the request is simply run again on the fresh document.
+   */
   handle(request: ApiRequest): Promise<ApiResponse> {
-    const result = this.queue.then(() => this.process(request));
+    const result = this.queue.then(() => this.withRetry(request));
     this.queue = result.catch(() => undefined);
     return result;
+  }
+
+  private async withRetry(request: ApiRequest): Promise<ApiResponse> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.process(request);
+      } catch (error) {
+        if (!(error instanceof ConflictError)) throw error;
+        if (attempt >= MAX_ATTEMPTS) return { status: 503, body: { error: "The server is busy. Please try again." } };
+      }
+    }
   }
 
   private async process(request: ApiRequest): Promise<ApiResponse> {
@@ -129,6 +152,7 @@ export class Backend {
       await this.store.save(doc);
       return response;
     } catch (error) {
+      if (error instanceof ConflictError) throw error;
       if (error instanceof HttpError) return { status: error.status, body: { error: error.message } };
       // Domain and validation errors carry user-facing messages; everything else stays hidden.
       if (error instanceof UserError) return { status: 400, body: { error: error.message } };

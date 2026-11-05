@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0a0e0c;
-  --color-surface: #111815;
-  --color-surface-2: #17201b;
-  --color-line: #243029;
-  --color-foreground: #e9eee9;
-  --color-muted: #8b978f;
-  --color-accent: #5fcf80;
-  --color-accent-dim: #1d3a29;
-  --color-danger: #f0766b;
+  --color-background: #070707;
+  --color-surface: #0f0f0e;
+  --color-surface-2: #151513;
+  --color-line: #2b2519;
+  --color-foreground: #f6f1e7;
+  --color-muted: #9d9789;
+  --color-accent: #e3b45a;
+  --color-accent-dim: #2a2111;
+  --color-danger: #ef6b5f;
   --color-warn: #e6b85c;
   --font-sans: var(--font-manrope), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -24,8 +24,8 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(900px 420px at 50% -120px, rgb(40 110 66 / 0.28), transparent 70%),
-    var(--color-background);
+    radial-gradient(900px 380px at 80% -140px, rgb(227 180 90 / 0.1), transparent 70%),
+    linear-gradient(160deg, #0b0b0a 0%, #070707 55%, #0a0907 100%);
   color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -35,13 +35,13 @@ a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 @layer components {
-  .card { @apply rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_0_rgb(255_255_255/0.03)_inset]; }
-  .card-title { @apply mb-3 text-sm font-semibold uppercase tracking-wider text-muted; }
-  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-line bg-surface-2 px-4 text-sm font-semibold text-foreground transition duration-150 hover:border-accent/50 hover:bg-[#1d2923] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply border-accent/60 bg-accent text-[#06140c] hover:border-accent hover:bg-[#7ee09a]; }
+  .card { @apply rounded-2xl border border-line p-5; background: linear-gradient(160deg, #121210 0%, #0c0c0b 100%); box-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 30px rgb(0 0 0 / 0.35); }
+  .card-title { @apply mb-4 flex items-center gap-2 border-b border-line pb-3 text-sm font-bold uppercase tracking-wide text-accent; }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-accent/40 bg-transparent px-4 text-sm font-semibold text-foreground transition duration-150 hover:border-accent hover:bg-accent/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply border-accent/70 text-[#1a1203] hover:border-accent hover:bg-transparent hover:brightness-110; background: linear-gradient(180deg, #f0c970 0%, #cf9d41 100%); box-shadow: 0 6px 18px rgb(227 180 90 / 0.18); }
   .btn-danger { @apply border-danger/40 text-danger hover:border-danger hover:bg-danger/10; }
   .btn-sm { @apply min-h-8 px-3 text-xs; }
-  .input { @apply w-full rounded-lg border border-line bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/70 transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25; }
+  .input { @apply w-full rounded-xl border border-line bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted/70 transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25; }
   .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted; }
   .badge { @apply inline-flex items-center rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-muted; }
   .badge-accent { @apply border-accent/40 bg-accent-dim text-accent; }
@@ -51,6 +51,16 @@ a { color: inherit; text-decoration: none; }
   .table th { @apply border-b border-line px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted; }
   .table td { @apply border-b border-line/60 px-3 py-3; }
   .table tr:last-child td { @apply border-b-0; }
+  .tile { @apply flex items-center gap-4 rounded-2xl border border-line px-5 py-4; background: linear-gradient(160deg, #121210 0%, #0c0c0b 100%); }
+  .tile-icon { @apply grid size-12 shrink-0 place-items-center text-accent; }
+  .row { @apply flex items-center justify-between gap-3 rounded-xl px-1 py-2 transition; }
+  .pill { @apply inline-flex items-center gap-2 rounded-full border border-accent/50 px-4 py-1.5 text-sm font-semibold text-accent transition hover:bg-accent/10; }
+  .side-link { @apply relative flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-muted transition hover:text-foreground; }
+  .side-link[aria-current="page"] { @apply text-foreground; background: linear-gradient(90deg, rgb(227 180 90 / 0.2), rgb(227 180 90 / 0)); box-shadow: inset 3px 0 0 var(--color-accent); }
+  .side-link[aria-current="page"] svg { @apply text-accent; }
+  .tab-link { @apply inline-flex items-center gap-2.5 rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-muted transition hover:text-foreground; }
+  .tab-link[aria-current="page"] { @apply border-line text-foreground; background: #1a1916; }
+  .tab-link[aria-current="page"] svg { @apply text-accent; }
   .rise { animation: rise 0.35s ease-out both; }
 }
 

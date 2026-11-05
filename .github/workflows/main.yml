@@ -28,10 +28,10 @@ jobs:
         run: npm test
       - name: Build website
         run: npm run build
-      - name: Deploy website and API to Cloudflare
+      - name: Deploy website and API to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           # Create both under GitHub: Settings > Secrets and variables > Actions > Secrets
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy -c worker/wrangler.toml
+          command: pages deploy out --project-name=felt-poker

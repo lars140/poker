@@ -7,13 +7,27 @@ import { Account } from "@/components/views/account";
 import { Dashboard } from "@/components/views/dashboard";
 import { CorrectResults, EnterResults, EventDetail, EventsList, NewEvent } from "@/components/views/events";
 import { GroupShell, GroupsList, History, Leaderboard, Members, NewGroup, Statistics, TournamentDetail } from "@/components/views/group";
+import { EventsOverview, StatisticsOverview, TournamentsOverview } from "@/components/views/overview";
 import { Link, segmentsOf, usePath } from "@/lib/router";
+import { CalendarDays, ChartColumn, House, LogOut, Settings, Trophy, Users } from "lucide-react";
 import { connect, logout, useSession, type SessionState } from "@/lib/session";
 
-const NAV = [
-  { to: "/", label: "Dashboard", match: (p: string) => p === "/" },
-  { to: "/groups", label: "Groups", match: (p: string) => p.startsWith("/groups") || p.startsWith("/g/") },
-  { to: "/account", label: "Account", match: (p: string) => p.startsWith("/account") },
+const dashboard = (p: string) => p === "/";
+const groups = (p: string) => p.startsWith("/groups") || p.startsWith("/g/");
+const account = (p: string) => p.startsWith("/account");
+
+const TOP_NAV = [
+  { to: "/", label: "Dashboard", icon: House, match: dashboard },
+  { to: "/groups", label: "Groups", icon: Users, match: groups },
+  { to: "/account", label: "Account", icon: Settings, match: account },
+];
+
+const SIDE_NAV = [
+  { to: "/", label: "Dashboard", icon: House, match: dashboard },
+  { to: "/groups", label: "Groups", icon: Users, match: groups },
+  { to: "/events", label: "Events", icon: CalendarDays, match: (p: string) => p.startsWith("/events") },
+  { to: "/tournaments", label: "Tournaments", icon: Trophy, match: (p: string) => p.startsWith("/tournaments") },
+  { to: "/statistics", label: "Statistics", icon: ChartColumn, match: (p: string) => p.startsWith("/statistics") },
 ];
 
 function Notice({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
@@ -46,27 +60,53 @@ function Shell({ session }: { session: SessionState }) {
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-line bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-20 border-b border-line bg-background/90 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <Brand href="#/" />
-          <nav aria-label="Main" className="flex gap-1">
-            {NAV.map((item) => (
-              <Link key={item.to} to={item.to} aria-current={item.match(clean) ? "page" : undefined}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${item.match(clean) ? "bg-accent-dim text-accent" : "text-muted hover:bg-surface-2 hover:text-foreground"}`}>
-                {item.label}
+          <span aria-hidden className="hidden h-8 w-px bg-line md:block" />
+          <nav aria-label="Main" className="hidden gap-1 md:flex">
+            {TOP_NAV.map((item) => (
+              <Link key={item.to} to={item.to} aria-current={item.match(clean) ? "page" : undefined} className="tab-link">
+                <item.icon size={18} aria-hidden />{item.label}
               </Link>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            {me && <span className="flex items-center gap-2 text-sm font-semibold"><Avatar name={me.username} /><span className="hidden sm:inline">{me.username}</span></span>}
-            <button className="btn btn-sm" type="button" onClick={() => void logout()}>Log out</button>
+            {me && (
+              <Link to="/account" className="flex items-center gap-2 text-sm font-semibold" aria-label="Your account">
+                <Avatar name={me.username} size={32} /><span className="hidden sm:inline">{me.username}</span>
+              </Link>
+            )}
+            <button className="btn btn-sm" type="button" onClick={() => void logout()}><LogOut size={14} aria-hidden />Log out</button>
           </div>
         </div>
+        <nav aria-label="Sections" className="flex gap-1 overflow-x-auto border-t border-line px-3 py-2 lg:hidden">
+          {[...SIDE_NAV, TOP_NAV[2]].map((item) => (
+            <Link key={item.to} to={item.to} aria-current={item.match(clean) ? "page" : undefined} className="tab-link whitespace-nowrap">
+              <item.icon size={16} aria-hidden />{item.label}
+            </Link>
+          ))}
+        </nav>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{route(segmentsOf(clean), league)}</main>
-      <footer className="border-t border-line py-5 text-center text-xs text-muted">
-        Felt only tracks results. There is no online poker, betting or payments.
-      </footer>
+      <div className="flex flex-1">
+        <aside className="sticky top-[65px] hidden h-[calc(100vh-65px)] w-[15.25rem] shrink-0 flex-col overflow-hidden border-r border-line bg-black/40 lg:flex">
+          <nav aria-label="Sections" className="grid gap-1 p-2 pt-4">
+            {SIDE_NAV.map((item) => (
+              <Link key={item.to} to={item.to} aria-current={item.match(clean) ? "page" : undefined} className="side-link">
+                <item.icon size={20} aria-hidden />{item.label}
+              </Link>
+            ))}
+          </nav>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/sidebar-art.webp" alt="" aria-hidden className="mt-auto w-full select-none" />
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="w-full max-w-[1500px] flex-1 px-4 py-8 sm:px-8">{route(segmentsOf(clean), league)}</main>
+          <footer className="border-t border-line py-5 text-center text-xs text-muted">
+            PrimePoker only tracks results. There is no online poker, betting or payments.
+          </footer>
+        </div>
+      </div>
     </>
   );
 }
@@ -75,6 +115,9 @@ function route(segments: string[], league: SessionState["league"]) {
   const [first, a, b, c, d] = segments;
   if (!first) return <Dashboard league={league} />;
   if (first === "account") return <Account />;
+  if (first === "events") return <EventsOverview league={league} />;
+  if (first === "tournaments") return <TournamentsOverview league={league} />;
+  if (first === "statistics") return <StatisticsOverview league={league} />;
   if (first === "groups") return a === "new" ? <NewGroup /> : <GroupsList league={league} />;
 
   if (first === "g" && a) {

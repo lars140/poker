@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Brand } from "@/components/brand";
 import { Field, useAction } from "@/components/ui";
 import { login, register } from "@/lib/session";
 
@@ -11,7 +10,8 @@ export function AuthPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
-      <div className="mb-8 flex justify-center"><Brand /></div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.webp" alt="PrimePoker – Play. Compete. Rise." width={220} height={220} className="mx-auto mb-6 size-56 select-none rounded-[22%]" />
       <div className="card rise p-6">
         <div role="tablist" aria-label="Account" className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-background p-1">
           {(["login", "register"] as const).map((tab) => (

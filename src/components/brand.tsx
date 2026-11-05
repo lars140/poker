@@ -1,8 +1,13 @@
-export function Brand({ href = "#/" }: { href?: string }) {
+import { Spade } from "lucide-react";
+
+export function Brand({ href = "#/", size = "md" }: { href?: string; size?: "md" | "lg" }) {
+  const large = size === "lg";
   return (
-    <a href={href} className="inline-flex items-center gap-2.5">
-      <span className="grid size-8 -rotate-6 place-items-center rounded-lg border border-accent/60 bg-accent-dim font-serif text-lg font-bold text-accent">F</span>
-      <span className="font-serif text-2xl font-bold tracking-tight">Felt<span className="text-accent">.</span></span>
+    <a href={href} className="inline-flex items-center gap-3" aria-label="PrimePoker home">
+      <Spade aria-hidden className={`${large ? "size-10" : "size-8"} fill-accent text-accent drop-shadow-[0_0_10px_rgb(227_180_90/0.45)]`} strokeWidth={1.5} />
+      <span className={`${large ? "text-4xl" : "text-2xl"} font-extrabold tracking-tight`}>
+        PRIME<span className="text-accent">POKER</span>
+      </span>
     </a>
   );
 }

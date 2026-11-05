@@ -1,6 +1,6 @@
 import type { PointsSeries } from "@/lib/stats";
 
-const COLORS = ["#5fcf80", "#e6b85c", "#6fb3f2", "#f0766b", "#c58af0", "#5fd0c8"];
+const COLORS = ["#e6b85c", "#6fb3f2", "#5fcf80", "#f0766b", "#c58af0", "#5fd0c8"];
 
 type Props = { data: PointsSeries; labels: Map<string, string> };
 
@@ -23,12 +23,12 @@ export function PointsChart({ data, labels }: Props) {
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Ranking points over time" className="w-full">
         {ticks.map((tick) => (
           <g key={tick}>
-            <line x1={pad.left} x2={width - pad.right} y1={y(tick)} y2={y(tick)} stroke="#243029" strokeWidth="1" />
-            <text x={pad.left - 6} y={y(tick) + 4} textAnchor="end" fontSize="11" fill="#8b978f">{tick}</text>
+            <line x1={pad.left} x2={width - pad.right} y1={y(tick)} y2={y(tick)} stroke="#2a2418" strokeWidth="1" />
+            <text x={pad.left - 6} y={y(tick) + 4} textAnchor="end" fontSize="11" fill="#9a9487">{tick}</text>
           </g>
         ))}
         {tournaments.map((t, i) => (
-          <text key={t.id} x={x(i)} y={height - 6} textAnchor="middle" fontSize="11" fill="#8b978f">{i + 1}</text>
+          <text key={t.id} x={x(i)} y={height - 6} textAnchor="middle" fontSize="11" fill="#9a9487">{i + 1}</text>
         ))}
         {top.map(([userId, values], index) => (
           <g key={userId} stroke={COLORS[index]} fill={COLORS[index]}>

@@ -10,6 +10,5 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "../src/server/backend.ts", "../src/lib/domain.ts", "../src/lib/errors.ts", "../src/lib/scoring.ts", "../src/lib/stats.ts", "../src/lib/validation.ts"],
-  "exclude": ["../src/**/*.test.ts"]
+  "include": ["**/*.ts", "../src/server/backend.ts", "../src/server/d1-store.ts", "../src/lib/domain.ts", "../src/lib/errors.ts", "../src/lib/scoring.ts", "../src/lib/stats.ts", "../src/lib/validation.ts"]
 }

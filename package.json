@@ -8,10 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "worker:dev": "wrangler dev -c worker/wrangler.toml --port 8787",
-    "worker:deploy": "wrangler deploy -c worker/wrangler.toml",
-    "worker:check": "tsc -p worker/tsconfig.json",
-    "deploy": "next build && wrangler deploy -c worker/wrangler.toml"
+    "pages:dev": "wrangler pages dev --port 8788",
+    "functions:check": "tsc -p functions/tsconfig.json",
+    "deploy": "next build && wrangler pages deploy out --project-name=felt-poker"
   },
   "dependencies": {
     "lucide-react": "^1.61.0",

@@ -5,7 +5,7 @@ import {
   displayNameSchema, eventResponseSchema, eventSchema, groupSchema, parseOrThrow, placementsSchema, usernameSchema,
 } from "./validation";
 
-// Shared by the browser and the Cloudflare Worker. The Worker is the authority: it runs these
+// Shared by the browser and the Cloudflare Pages Function. The function is the authority: it runs these
 // functions with the authenticated user as `actor`, so permissions are enforced on the server.
 // Every function is pure: it takes the current League and returns a new one, or throws an Error
 // whose message is safe to show to users.

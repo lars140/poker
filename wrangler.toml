@@ -1,0 +1,11 @@
+name = "felt-poker"
+compatibility_date = "2025-09-01"
+
+# The exported website (npm run build writes ./out). The functions/ folder answers /api/*.
+pages_build_output_dir = "out"
+
+# The D1 database. Create it once with `npx wrangler d1 create felt-db` and paste the printed id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "felt-db"
+database_id = "dd700618-507f-4a23-8d79-6a61738a6b19"

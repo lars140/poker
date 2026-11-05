@@ -1,0 +1,2 @@
+# Copy to .dev.vars. Only needed when the website runs with `npm run dev` (port 3000) and calls the API on port 8788.
+ALLOWED_ORIGINS=http://localhost:3000
