@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { EmptyState, formatDate, formatDateTime, PageHeader, PlayerName, Stat } from "@/components/ui";
-import { goingCount, type League } from "@/lib/domain";
+import { goingCount, isAdminOf, type League } from "@/lib/domain";
 import { Link } from "@/lib/router";
+import { useSession } from "@/lib/session";
 
 export function Dashboard({ league }: { league: League }) {
+  const { me } = useSession();
+  const adminGroup = league.groups.find((g) => me && isAdminOf(g, me.id));
   const [now] = useState(() => Date.now());
   const upcoming = league.groups
     .flatMap((g) => g.events.filter((e) => e.status === "scheduled" && new Date(e.startsAt).getTime() >= now).map((event) => ({ group: g, event })))
@@ -16,24 +19,24 @@ export function Dashboard({ league }: { league: League }) {
     .sort((a, b) => b.tournament.playedAt.localeCompare(a.tournament.playedAt))
     .slice(0, 5);
   const tournamentCount = league.groups.reduce((n, g) => n + g.tournaments.length, 0);
-  const playerCount = new Set(league.groups.flatMap((g) => g.members.filter((m) => !m.archived).map((m) => m.name.toLowerCase()))).size;
+  const playerCount = new Set(league.groups.flatMap((g) => g.members.filter((m) => !m.archived).map((m) => m.userId))).size;
 
   return (
     <div className="rise grid gap-6">
       <PageHeader
-        title="Your poker leagues"
+        title={`Welcome back, ${me?.displayName || me?.username || "player"}`}
         subtitle="Groups, game nights, results and leaderboards for your in-person games."
         actions={
           <>
             <Link to="/groups/new" className="btn btn-primary">Create group</Link>
-            {league.groups.length > 0 && <Link to={`/g/${league.groups[0].id}/events/new`} className="btn">Create event</Link>}
+            {adminGroup && <Link to={`/g/${adminGroup.id}/events/new`} className="btn">Create event</Link>}
           </>
         }
       />
 
       <section aria-label="Overview" className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Groups" value={league.groups.length} />
-        <Stat label="Players" value={playerCount} />
+        <Stat label="Players in your groups" value={playerCount} />
         <Stat label="Upcoming events" value={upcoming.length} />
         <Stat label="Tournaments played" value={tournamentCount} />
       </section>
@@ -43,7 +46,7 @@ export function Dashboard({ league }: { league: League }) {
           <h2 className="card-title">Groups</h2>
           {league.groups.length === 0 ? (
             <EmptyState title="Start your first league" action={{ to: "/groups/new", label: "Create a group" }}>
-              Create a group, add your regular players and schedule the first game night. Already have a backup? Restore it on the Data page.
+              Create a group and add your friends by username, or ask a group admin to add yours.
             </EmptyState>
           ) : (
             <ul className="grid gap-2">
@@ -51,7 +54,7 @@ export function Dashboard({ league }: { league: League }) {
                 <li key={g.id}>
                   <Link to={`/g/${g.id}`} className="flex items-center justify-between rounded-xl border border-line bg-surface-2 px-4 py-3 transition hover:border-accent/50">
                     <span className="font-semibold">{g.name}</span>
-                    <span className="text-xs text-muted">{g.members.filter((m) => !m.archived).length} players</span>
+                    <span className="text-xs text-muted">{g.members.filter((m) => !m.archived).length} members</span>
                   </Link>
                 </li>
               ))}
@@ -97,7 +100,7 @@ export function Dashboard({ league }: { league: League }) {
                       <td><Link className="font-semibold hover:text-accent" to={`/g/${group.id}/history/${tournament.id}`}>{tournament.title}</Link></td>
                       <td className="text-muted">{group.name}</td>
                       <td className="whitespace-nowrap text-muted">{formatDate(tournament.playedAt)}</td>
-                      <td>{winner ? <PlayerName group={group} memberId={winner.memberId} /> : "–"}</td>
+                      <td>{winner ? <PlayerName group={group} userId={winner.memberId} /> : "–"}</td>
                     </tr>
                   );
                 })}

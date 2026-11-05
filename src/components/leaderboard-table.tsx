@@ -1,4 +1,4 @@
-import { Avatar } from "@/components/ui";
+import { PlayerName } from "@/components/ui";
 import type { Group } from "@/lib/domain";
 import type { LeaderboardEntry } from "@/lib/stats";
 
@@ -21,18 +21,10 @@ export function LeaderboardTable({ entries, group }: { entries: LeaderboardEntry
         </thead>
         <tbody className="tabular-nums">
           {entries.map((entry) => {
-            const member = group.members.find((m) => m.id === entry.userId);
-            const name = member?.name ?? "Unknown";
             return (
               <tr key={entry.userId}>
                 <td className={`font-bold ${entry.rank === 1 ? "text-accent" : "text-muted"}`}>{entry.rank}</td>
-                <td>
-                  <span className="inline-flex items-center gap-2.5">
-                    <Avatar name={name} />
-                    <span className="font-semibold">{name}</span>
-                    {member?.archived && <span className="badge">former</span>}
-                  </span>
-                </td>
+                <td><PlayerName group={group} userId={entry.userId} /></td>
                 <td className="text-right text-base font-bold text-accent">{entry.totalPoints}</td>
                 <td className="text-right">{entry.wins}</td>
                 <td className="text-right">{entry.seconds}</td>

@@ -1,24 +1,48 @@
 "use client";
 
+import { AuthPage } from "@/components/auth-page";
 import { Brand } from "@/components/brand";
-import { Alert, EmptyState } from "@/components/ui";
+import { Avatar, EmptyState } from "@/components/ui";
+import { Account } from "@/components/views/account";
 import { Dashboard } from "@/components/views/dashboard";
-import { DataPage } from "@/components/views/data";
 import { CorrectResults, EnterResults, EventDetail, EventsList, NewEvent } from "@/components/views/events";
-import { GroupShell, GroupsList, History, Leaderboard, NewGroup, Players, Statistics, TournamentDetail } from "@/components/views/group";
+import { GroupShell, GroupsList, History, Leaderboard, Members, NewGroup, Statistics, TournamentDetail } from "@/components/views/group";
 import { Link, segmentsOf, usePath } from "@/lib/router";
-import { useLeague } from "@/lib/storage";
+import { connect, logout, useSession, type SessionState } from "@/lib/session";
 
 const NAV = [
   { to: "/", label: "Dashboard", match: (p: string) => p === "/" },
   { to: "/groups", label: "Groups", match: (p: string) => p.startsWith("/groups") || p.startsWith("/g/") },
-  { to: "/data", label: "Data", match: (p: string) => p.startsWith("/data") },
+  { to: "/account", label: "Account", match: (p: string) => p.startsWith("/account") },
 ];
 
+function Notice({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-4 py-10 text-center">
+      <div className="flex justify-center"><Brand /></div>
+      <h1 className="text-xl font-bold">{title}</h1>
+      <p className="text-sm text-muted">{children}</p>
+      {action}
+    </main>
+  );
+}
+
 export function App() {
-  const { league, ready, saveError } = useLeague();
-  const path = usePath();
-  const clean = path.split("?")[0];
+  const session = useSession();
+
+  if (session.status === "loading") return <Notice title="Loading…">Connecting to the server.</Notice>;
+  if (session.status === "unreachable") {
+    return <Notice title="Server unreachable" action={<div><button className="btn btn-primary" type="button" onClick={() => void connect()}>Try again</button></div>}>
+      The server could not be reached. Check your connection and try again.
+    </Notice>;
+  }
+  if (session.status === "anonymous") return <AuthPage />;
+  return <Shell session={session} />;
+}
+
+function Shell({ session }: { session: SessionState }) {
+  const clean = usePath().split("?")[0];
+  const { me, league } = session;
 
   return (
     <>
@@ -33,42 +57,39 @@ export function App() {
               </Link>
             ))}
           </nav>
+          <div className="ml-auto flex items-center gap-3">
+            {me && <span className="flex items-center gap-2 text-sm font-semibold"><Avatar name={me.username} /><span className="hidden sm:inline">{me.username}</span></span>}
+            <button className="btn btn-sm" type="button" onClick={() => void logout()}>Log out</button>
+          </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-        {!ready ? <p className="text-sm text-muted">Loading…</p> : (
-          <>
-            {saveError && clean !== "/data" && <div className="mb-4"><Alert kind="warn">{saveError}</Alert></div>}
-            {route(segmentsOf(clean), league, saveError)}
-          </>
-        )}
-      </main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{route(segmentsOf(clean), league)}</main>
       <footer className="border-t border-line py-5 text-center text-xs text-muted">
-        Felt only tracks results. There is no online poker, betting or payments. Data stays in this browser.
+        Felt only tracks results. There is no online poker, betting or payments.
       </footer>
     </>
   );
 }
 
-function route(segments: string[], league: ReturnType<typeof useLeague>["league"], saveError: string | null) {
+function route(segments: string[], league: SessionState["league"]) {
   const [first, a, b, c, d] = segments;
   if (!first) return <Dashboard league={league} />;
-  if (first === "data") return <DataPage league={league} saveError={saveError} />;
-  if (first === "groups") return a === "new" ? <NewGroup league={league} /> : <GroupsList league={league} />;
+  if (first === "account") return <Account />;
+  if (first === "groups") return a === "new" ? <NewGroup /> : <GroupsList league={league} />;
 
   if (first === "g" && a) {
     const group = league.groups.find((g) => g.id === a);
-    if (!group) return <EmptyState title="Group not found" action={{ to: "/groups", label: "Your groups" }}>It may have been deleted or lives in another browser.</EmptyState>;
+    if (!group) return <EmptyState title="Group not found" action={{ to: "/groups", label: "Your groups" }}>It may have been deleted, or you are not a member of it.</EmptyState>;
     let content: React.ReactNode;
     if (!b) content = <Leaderboard group={group} />;
-    else if (b === "members") content = <Players league={league} group={group} />;
+    else if (b === "members") content = <Members group={group} />;
     else if (b === "stats") content = <Statistics group={group} />;
     else if (b === "history" && !c) content = <History group={group} />;
-    else if (b === "history" && c) content = <TournamentDetail league={league} group={group} tournamentId={c}><CorrectResults league={league} group={group} tournamentId={c} /></TournamentDetail>;
+    else if (b === "history" && c) content = <TournamentDetail group={group} tournamentId={c}><CorrectResults group={group} tournamentId={c} /></TournamentDetail>;
     else if (b === "events" && !c) content = <EventsList group={group} />;
-    else if (b === "events" && c === "new") content = <NewEvent league={league} group={group} />;
-    else if (b === "events" && c && d === "results") content = <EnterResults league={league} group={group} eventId={c} />;
-    else if (b === "events" && c) content = <EventDetail league={league} group={group} eventId={c} />;
+    else if (b === "events" && c === "new") content = <NewEvent group={group} />;
+    else if (b === "events" && c && d === "results") content = <EnterResults group={group} eventId={c} />;
+    else if (b === "events" && c) content = <EventDetail group={group} eventId={c} />;
     else content = <EmptyState title="Page not found" />;
     return <GroupShell group={group}>{content}</GroupShell>;
   }

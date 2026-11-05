@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { Group } from "@/lib/domain";
+import { memberOf, userName, type Group } from "@/lib/domain";
 import { Link } from "@/lib/router";
+import { useSession } from "@/lib/session";
 
 export const formatDateTime = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -29,13 +30,23 @@ export function Avatar({ name, size = 28 }: { name: string; size?: number }) {
   );
 }
 
-export function PlayerName({ group, memberId }: { group: Group; memberId: string }) {
-  const member = group.members.find((m) => m.id === memberId);
-  const name = member?.name ?? "Unknown";
+/** Resolves account ids to names using the data the server sent for this user. */
+export function useUserLabel() {
+  const { league } = useSession();
+  return (userId: string) => userName(league, userId);
+}
+
+export function PlayerName({ group, userId }: { group?: Group; userId: string }) {
+  const { league } = useSession();
+  const user = league.users.find((u) => u.id === userId);
+  const member = group ? memberOf(group, userId) : undefined;
+  const name = user ? user.displayName || user.username : "Unknown";
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex flex-wrap items-center gap-2">
       <Avatar name={name} size={24} />
       <span className="font-semibold">{name}</span>
+      {user?.displayName && <span className="text-xs text-muted">@{user.username}</span>}
+      {member?.role === "admin" && !member.archived && <span className="badge badge-accent">Admin</span>}
       {member?.archived && <span className="badge">former</span>}
     </span>
   );
@@ -100,19 +111,23 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-/** Runs an action that may throw a user-facing Error, and shows its message. */
+/** Runs an async action that may throw a user-facing Error, and shows its message. */
 export function useAction() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const run = (fn: () => string | void) => {
+  const [busy, setBusy] = useState(false);
+  const run = async (fn: () => Promise<string | void> | string | void) => {
+    setBusy(true);
     try {
-      setMessage(fn() ?? null);
+      setMessage((await fn()) ?? null);
       setError(null);
     } catch (e) {
       setMessage(null);
       setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
     }
   };
   const feedback = error ? <Alert>{error}</Alert> : message ? <Alert kind="success">{message}</Alert> : null;
-  return { run, feedback };
+  return { run, feedback, busy };
 }

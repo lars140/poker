@@ -1,19 +1,27 @@
 # Felt: Private Poker League
 
-Felt is a static web app for managing an in-person Texas Hold'em league: groups, players, game nights, attendance, tournament results, points and leaderboards. It is hosted on GitHub Pages, so there is **no server and no database**. All data lives in the visitor's browser (`localStorage`).
+Felt manages an in-person Texas Hold'em league: accounts, groups, game nights, attendance, tournament results, points and leaderboards. There is no virtual table, card simulation, chip management, betting, payments or real-money gambling.
 
-There is no virtual table, card simulation, chip management, betting, payments or real-money gambling.
+## Architecture
 
-## What it does
+Everything runs on Cloudflare as **one Worker** (`worker/`):
 
-- Multiple groups, each with its own players, events, history and leaderboard. Rankings never mix between groups.
-- Players can be archived; they stay visible in past results.
-- Events with title, description, date and start time, location, registration deadline and a participant limit. Each player is Going, Maybe or Declined; the limit can never be exceeded, and a full event is shown as full.
-- Results for 4 to 7 players with a confirmation screen showing the calculated points before saving. An event can be finalized only once; corrections replace all placements and nothing is counted twice. Attendance never awards points.
-- Leaderboard (points, wins, 2nd, 3rd, played, average position), history with a date filter, statistics and a points-over-time chart.
-- Backup and restore as a JSON file (Data page), so a league can be moved to another browser or device.
+- **Website:** a static Next.js export (`out/`) served by the Worker as static assets, using hash routes.
+- **API:** `/api/*` is handled by the same Worker, so the site and the API share one address (no CORS, no extra configuration).
+- **Data:** all accounts, groups, events and results live in **one JSON document** in a Durable Object, so they are available from every device. The Durable Object handles one request at a time, so simultaneous edits cannot overwrite each other.
+- **Shared rules:** `src/lib/domain.ts` is the single implementation of all business rules and permission checks. The browser only displays data; the Worker runs the rules for the authenticated user.
 
-Scoring (one central function in `src/lib/scoring.ts`, points stored per result when finalized):
+## Features
+
+- Log in / create account. Passwords are stored only as salted PBKDF2 hashes; sessions use random tokens of which only a hash is stored; repeated failed logins lock the account for 10 minutes.
+- Groups with members. Admins add existing accounts by username. Adding someone never makes them admin.
+- Roles per group: an admin of one group is just a stranger in another. Admins edit the group, add/remove members, grant or remove admin rights, manage events and enter or correct results. A group always keeps at least one admin. Members can view everything in their groups, answer event invitations for themselves and leave.
+- Private groups: users only receive the groups they belong to and the accounts of their group mates.
+- Events with date, location, registration deadline and participant limit; Going / Maybe / Declined; the limit can never be exceeded.
+- Results for 4 to 7 players with a confirmation screen, finalized once per event, correctable by admins without double counting. Attendance never awards points.
+- Leaderboard, history with date filter, statistics and a points-over-time chart.
+
+Scoring (one central function, `src/lib/scoring.ts`; points are stored per result when finalized):
 
 | Players | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th |
 | ------- | --- | --- | --- | --- | --- | --- | --- |
@@ -22,54 +30,52 @@ Scoring (one central function in `src/lib/scoring.ts`, points stored per result 
 | 6 | 15 | 10 | 6 | 3 | 1 | 0 | |
 | 7 | 18 | 12 | 8 | 4 | 2 | 1 | 0 |
 
-## Limits of a static site
+## Known limits
 
-GitHub Pages can only serve files, so some things from a full multi-user app are not possible:
+- No email, so there is **no password reset or email verification**. A forgotten password cannot be recovered; the owner of the Cloudflare account would have to edit the stored document.
+- The whole league is one JSON value (Durable Object storage limit: 2 MB). That is plenty for many hundreds of game nights; very large leagues would need a database.
+- The session token is kept in the browser's `localStorage`.
+- No in-app notifications or invitation links: admins add people by username.
 
-- **No accounts, passwords, email verification or password reset.** Nobody logs in.
-- **No shared data between devices.** Each browser has its own copy. Use the backup file to move or share a league. If two people edit separately, their copies diverge.
-- **No admin/member roles and no access control.** Anyone who can open the site in your browser can change that browser's data. Players are just names in a group.
-- **No direct invitations, invitation links or notifications**, because there is nobody to send them to.
-- Clearing site data in the browser deletes the league. Download backups regularly. If the browser refuses to save, the app shows a warning instead of pretending it worked.
+## Deploy to Cloudflare
 
-Real multi-user features would need a backend, which this project deliberately does not use.
-
-## Run locally
-
-Requires Node.js 20.9 or later and npm.
+Requires Node.js 20.9+ and a free Cloudflare account.
 
 ```powershell
 npm ci
-npm run dev
+npx wrangler login
+npm run deploy
 ```
 
-Open `http://localhost:3000`.
+`npm run deploy` builds the website and uploads it together with the Worker. Wrangler prints the address (`https://felt-poker.<your-subdomain>.workers.dev`). Open it, create an account and start your first group. A custom domain can be added in the Cloudflare dashboard (Worker → Settings → Domains & Routes).
 
-## Test and build
+If `npm ci` warns that scripts are blocked (`workerd`), run `npm approve-scripts` once so Wrangler can run locally.
+
+### Automatic deploys from GitHub (optional)
+
+The workflow in `.github/workflows/main.yml` runs the tests and deploys on every push to `main`. Add two repository secrets (Settings → Secrets and variables → Actions):
+
+- `CLOUDFLARE_API_TOKEN`: an API token created from the "Edit Cloudflare Workers" template.
+- `CLOUDFLARE_ACCOUNT_ID`: shown in the Cloudflare dashboard.
+
+Alternatively, connect the repository in the Cloudflare dashboard (Workers & Pages → Create → Import a repository) with build command `npm ci && npm run build` and deploy command `npx wrangler deploy -c worker/wrangler.toml`.
+
+## Local development
 
 ```powershell
-npm test
+npm run worker:dev   # backend on http://localhost:8787 with local storage
+npm run dev          # website on http://localhost:3000 (talks to the Worker above)
+```
+
+To try the production setup locally, run `npm run build`, then `npm run worker:dev`, and open http://localhost:8787.
+
+## Checks
+
+```powershell
+npm test             # domain rules, permissions, scoring, validation, backend (login, sessions, lockout, admin rights)
 npm run lint
+npm run worker:check # type-check the Worker
 npm run build
 ```
 
-Tests cover scoring for 4 to 7 players, invalid and duplicate placements, single finalization, corrections, independent group leaderboards, attendance limits and deadlines, duplicate attendance, and input validation.
-
-## GitHub Pages
-
-The GitHub Actions workflow in `.github/workflows/main.yml` builds the app with Next.js static export and deploys the generated `out/` directory. Repository sites automatically use the repository name as their base path; user and organization sites are published at the root. In the repository settings, enable GitHub Pages and select GitHub Actions as the source.
-
-### Without GitHub Actions (serve from the `docs` folder)
-
-GitHub Pages cannot build TypeScript; it only serves finished files. If Pages is set to "Deploy from a branch", build the site locally and commit it:
-
-```powershell
-npm run build:docs   # writes the finished site to ./docs (base path /poker; pass another name as an argument)
-git add docs
-git commit -m "Build site"
-git push
-```
-
-Then in Settings → Pages choose **Deploy from a branch**, branch `main`, folder `/docs`. Rebuild and commit `docs` after every change.
-
-The app uses hash-based routes (`/#/g/...`), so every page works on a static host without server rewrites.
+The backend tests run the real request handler with an in-memory store. A manual smoke test against `wrangler dev` covered the website, assets, the 404 page, registration, duplicate usernames, wrong passwords and protected routes from a single address.
